@@ -5,20 +5,19 @@ pipeline {
             args '--privileged -v /dev/bus/usb:/dev/bus/usb'
         }
     }
-stages {
-        stage('Test') {
-            steps {
-                sh 'appium -v'
-            }
-        }
-    }
-}
+
     environment {
         ANDROID_HOME = "/root/android-sdk"
         PATH = "$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools"
     }
 
     stages {
+        stage('Test Appium Image') {
+            steps {
+                sh 'appium -v'
+            }
+        }
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -28,10 +27,10 @@ stages {
         stage('Check ADB') {
             steps {
                 sh '''
-                echo "Verifying ADB installation..."
-                adb version
-                adb start-server
-                adb devices
+                    echo "Verifying ADB installation..."
+                    adb version
+                    adb start-server
+                    adb devices
                 '''
             }
         }
@@ -45,8 +44,8 @@ stages {
         stage('Run WebdriverIO Tests') {
             steps {
                 sh '''
-                echo "Running tests..."
-                npx wdio run ./wdio.conf.js || echo "⚠️ Tests failed, but continuing to report..."
+                    echo "Running tests..."
+                    npx wdio run ./wdio.conf.js || echo "⚠️ Tests failed, but continuing to report..."
                 '''
             }
         }
