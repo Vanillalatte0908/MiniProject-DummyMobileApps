@@ -5,7 +5,14 @@ pipeline {
             args '--privileged -v /dev/bus/usb:/dev/bus/usb'
         }
     }
-
+stages {
+        stage('Test') {
+            steps {
+                sh 'appium -v'
+            }
+        }
+    }
+}
     environment {
         ANDROID_HOME = "/root/android-sdk"
         PATH = "$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools"
