@@ -1,5 +1,5 @@
 pipeline {
-    agent any {
+    agent {
         docker {
             image 'appium/appium:latest'
             args '--privileged -v /dev/bus/usb:/dev/bus/usb'
