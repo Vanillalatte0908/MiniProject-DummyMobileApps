@@ -16,7 +16,7 @@ export const config = {
     capabilities: [{
     platformName: "Android",
     'appium:platformVersion': "11.0",
-    'appium:deviceName': "adb-YHQOWWQKQWP7R45H-CmoAKB",
+    'appium:deviceName': "adb-YHQOWWQKQWP7R45H-CmoAKB._adb-tls-connect._tcp",
     'appium:automationName': "UiAutomator2",
     'appium:appPackage': "com.saucelabs.mydemoapp.rn",
     'appium:appActivity': "com.saucelabs.mydemoapp.rn/.MainActivity",
