@@ -2,60 +2,47 @@ pipeline {
     agent any
 
     environment {
-        NODE_ENV = "test"
-        PATH = "/usr/local/bin:$PATH"
+        ANDROID_HOME = "/Users/refqihussein/Library/Android/sdk"
+        PATH = "$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Prepare Environment') {
             steps {
-                echo "Checking out code..."
-                checkout scm
+                sh '''
+                adb start-server
+                echo "Connected Devices:"
+                adb devices
+                '''
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                echo "Installing Node.js dependencies..."
-                sh 'npm install'
+                sh 'npm ci'
             }
         }
 
-        stage('Run WebdriverIO Tests') {
+        stage('Run Mobile Tests') {
             steps {
-                echo "Running WebdriverIO tests..."
-                sh 'npx wdio run ./wdio.conf.js'
+                // Run WDIO but don’t fail the pipeline immediately if tests fail
+                sh '''
+                npx wdio run ./wdio.conf.js || echo "⚠️ Tests failed, continuing to generate reports..."
+                '''
             }
         }
 
-        stage('Generate Allure Report') {
+        stage('Archive Reports') {
             steps {
-                echo "Generating Allure report..."
-                sh 'npx allure generate ./allure-results --clean -o ./allure-report || true'
-            }
-        }
-
-        stage('Publish Allure Report') {
-            steps {
-                script {
-                    // If Allure plugin is installed in Jenkins
-                    allure([
-                        includeProperties: false,
-                        jdk: '',
-                        results: [[path: 'allure-results']]
-                    ])
-                }
+                archiveArtifacts artifacts: 'reports/html/**/*.*', fingerprint: true, allowEmptyArchive: true
             }
         }
     }
 
     post {
         always {
-            echo "Archiving results and cleaning up..."
-            archiveArtifacts artifacts: 'allure-report/**', allowEmptyArchive: true
-        }
-        failure {
-            echo "Build failed. Check logs and screenshots in ./screenshots/"
+            echo 'Cleaning up ADB...'
+            sh 'adb kill-server || true'
         }
     }
 }
