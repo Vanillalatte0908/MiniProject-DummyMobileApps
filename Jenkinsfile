@@ -1,23 +1,30 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            // Official Appium image with Node + ADB + Android SDK tools
+            image 'appium/appium:latest'
+            args '--privileged -v /dev/bus/usb:/dev/bus/usb'
+        }
+    }
 
     environment {
-        ANDROID_HOME = "$WORKSPACE/android-sdk"
+        ANDROID_HOME = "/root/android-sdk"
         PATH = "$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools"
     }
 
     stages {
-        stage('Prepare Environment') {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Check ADB') {
             steps {
                 sh '''
-                echo "Installing Android platform-tools if not already installed..."
-                if ! command -v adb >/dev/null 2>&1; then
-                    sudo apt-get update
-                    sudo apt-get install -y android-sdk-platform-tools
-                fi
-
+                echo "Verifying ADB installation..."
+                adb version
                 adb start-server
-                echo "Connected Devices:"
                 adb devices
                 '''
             }
@@ -29,25 +36,26 @@ pipeline {
             }
         }
 
-        stage('Run Mobile Tests') {
+        stage('Run WebdriverIO Tests') {
             steps {
                 sh '''
-                echo "Running WebdriverIO tests..."
-                npx wdio run ./wdio.conf.js || echo "⚠️ Tests failed, generating reports anyway..."
+                echo "Running tests..."
+                npx wdio run ./wdio.conf.js || echo "⚠️ Tests failed, but continuing to report..."
                 '''
             }
         }
 
-        stage('Archive Reports') {
+        stage('Generate & Archive Reports') {
             steps {
-                archiveArtifacts artifacts: 'reports/html/**/*.*', fingerprint: true, allowEmptyArchive: true
+                sh 'npx allure generate ./allure-results --clean -o ./allure-report || true'
+                archiveArtifacts artifacts: 'allure-report/**/*.*', fingerprint: true, allowEmptyArchive: true
             }
         }
     }
 
     post {
         always {
-            echo 'Cleaning up ADB...'
+            echo "Cleaning up ADB..."
             sh 'adb kill-server || true'
         }
     }
