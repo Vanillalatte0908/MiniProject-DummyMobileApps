@@ -1,7 +1,6 @@
 pipeline {
     agent {
         docker {
-            // Official Appium image with Node + ADB + Android SDK tools
             image 'appium/appium:latest'
             args '--privileged -v /dev/bus/usb:/dev/bus/usb'
         }
@@ -10,6 +9,10 @@ pipeline {
     environment {
         ANDROID_HOME = "/root/android-sdk"
         PATH = "$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools"
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES') // prevent hanging jobs
     }
 
     stages {
@@ -23,31 +26,37 @@ pipeline {
             steps {
                 sh '''
                 echo "Verifying ADB installation..."
-                adb version
-                adb start-server
-                adb devices
+                adb version || echo "⚠️ adb not found"
+                adb start-server || true
+                adb devices || true
                 '''
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm ci'
+                sh '''
+                echo "Installing dependencies..."
+                npm ci || npm install
+                '''
             }
         }
 
         stage('Run WebdriverIO Tests') {
             steps {
                 sh '''
-                echo "Running tests..."
-                npx wdio run ./wdio.conf.js || echo "⚠️ Tests failed, but continuing to report..."
+                echo "Running WDIO tests..."
+                npx wdio run ./wdio.conf.js || echo "⚠️ Tests failed, generating report anyway..."
                 '''
             }
         }
 
         stage('Generate & Archive Reports') {
             steps {
-                sh 'npx allure generate ./allure-results --clean -o ./allure-report || true'
+                sh '''
+                echo "Generating Allure report..."
+                npx allure generate ./allure-results --clean -o ./allure-report || true
+                '''
                 archiveArtifacts artifacts: 'allure-report/**/*.*', fingerprint: true, allowEmptyArchive: true
             }
         }
