@@ -11,10 +11,6 @@ pipeline {
         PATH = "$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools"
     }
 
-    options {
-        timeout(time: 30, unit: 'MINUTES') // prevent hanging jobs
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -26,46 +22,45 @@ pipeline {
             steps {
                 sh '''
                 echo "Verifying ADB installation..."
-                adb version || echo "⚠️ adb not found"
-                adb start-server || true
-                adb devices || true
+                adb version
+                adb start-server
+                adb devices
                 '''
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh '''
-                echo "Installing dependencies..."
-                npm ci || npm install
-                '''
+                sh 'npm ci'
             }
         }
 
         stage('Run WebdriverIO Tests') {
             steps {
                 sh '''
-                echo "Running WDIO tests..."
-                npx wdio run ./wdio.conf.js || echo "⚠️ Tests failed, generating report anyway..."
+                echo "Running tests..."
+                npx wdio run ./wdio.conf.js || echo "⚠️ Tests failed, but continuing to report..."
                 '''
             }
         }
 
         stage('Generate & Archive Reports') {
             steps {
-                sh '''
-                echo "Generating Allure report..."
-                npx allure generate ./allure-results --clean -o ./allure-report || true
-                '''
+                sh 'npx allure generate ./allure-results --clean -o ./allure-report || true'
                 archiveArtifacts artifacts: 'allure-report/**/*.*', fingerprint: true, allowEmptyArchive: true
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                sh 'adb kill-server || true'
             }
         }
     }
 
     post {
         always {
-            echo "Cleaning up ADB..."
-            sh 'adb kill-server || true'
+            echo "✅ Jenkins pipeline finished."
         }
     }
 }
