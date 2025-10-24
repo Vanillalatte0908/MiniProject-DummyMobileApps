@@ -1,4 +1,6 @@
 import { join } from 'path';
+import allure from '@wdio/allure-reporter';
+import { execSync } from 'node:child_process';
 
 export const config = {
     runner: 'local',
@@ -26,7 +28,34 @@ export const config = {
     mochaOpts: {
         ui: 'bdd',
         timeout: 60000
-    }
+    },
 
+    reporters: [
+        ['allure', {
+            outputDir: './allure-results',
+            disableWebdriverStepsReporting: false,
+            disableWebdriverScreenshotsReporting: false,
+        }]
+    ],
+
+       onComplete: function(exitCode, config, capabilities, results) {
+        try {
+            execSync('allure generate ./allure-results --clean -o ./allure-report', { stdio: 'inherit' });
+            console.log('Allure report successfully generated!');
+        } catch (err) {
+            console.error('Error generating Allure report', err);
+        }
+    },
     
-};
+    afterTest: async function(test, context, { error, passed }) {
+        if (!passed) {
+            // Capture screenshot on failure
+            const timestamp = new Date().toISOString().replace(/:/g, '-');
+            const filepath = `./screenshots/${test.title}-${timestamp}.png`;
+            await browser.saveScreenshot(filepath);
+            
+            // Attach screenshot to Allure report
+            allure.addAttachment('Screenshot', await browser.takeScreenshot(), 'image/png');
+        }
+    }
+}

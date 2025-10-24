@@ -1,36 +1,46 @@
+import allure from '@wdio/allure-reporter';
+
 describe('Login Apps', () => {
-    it('should open the app and verify the login screen', async () => {
-        const loginScreenElement = await $('//android.widget.FrameLayout[@resource-id="android:id/content"]'); 
+
+    it('should open the app and show login screen', async () => {
+        allure.startStep('Verify login screen is displayed');
+        const loginScreenElement = await $('//android.widget.FrameLayout[@resource-id="android:id/content"]');
         await loginScreenElement.waitForDisplayed({ timeout: 5000 });
         const isDisplayed = await loginScreenElement.isDisplayed();
+        allure.endStep();
         expect(isDisplayed).toBe(true);
     });
 
-    it('should allow the user to log in with valid credentials', async () => {
-        // Open menu
+    it('should login with valid credentials', async () => {
+        allure.startStep('Open menu');
         const menuButton = await $('//android.view.ViewGroup[@content-desc="open menu"]');
         await menuButton.click();
+        allure.endStep();
 
-        // Select Login
+        allure.startStep('Select login menu item');
         const loginMenu = await $('//android.view.ViewGroup[@content-desc="menu item log in"]');
         await loginMenu.click();
+        allure.endStep();
 
-        // Fill username
+        allure.startStep('Enter username');
         const usernameField = await $('//android.widget.EditText[@content-desc="Username input field"]');
         await usernameField.setValue('bob@example.com');
+        allure.endStep();
 
-        // Fill password
+        allure.startStep('Enter password');
         const passwordField = await $('//android.widget.EditText[@content-desc="Password input field"]');
         await passwordField.setValue('10203040');
+        allure.endStep();
 
-        // Tap login
+        allure.startStep('Click login button');
         const loginButton = await $('//android.view.ViewGroup[@content-desc="Login button"]');
         await loginButton.click();
+        allure.endStep();
 
-        // Verify home screen
+        allure.startStep('Verify home screen after login');
         const homeScreen = await $('//android.widget.FrameLayout[@resource-id="android:id/content"]');
         await homeScreen.waitForDisplayed({ timeout: 5000 });
         const isDisplayed = await homeScreen.isDisplayed();
-        expect(isDisplayed).toBe(true);
+        allure.endStep();
     });
 });
