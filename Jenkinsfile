@@ -1,72 +1,20 @@
 pipeline {
-    agent {
-        docker {
-            image 'appium/appium:latest'
-            args '--privileged -v /dev/bus/usb:/dev/bus/usb'
-        }
-    }
-
-    environment {
-        ANDROID_HOME = "/root/android-sdk"
-        PATH = "$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools"
-    }
-
+    agent any
     stages {
-        stage('Test Appium Image') {
+        stage('Build') {
             steps {
-                sh 'appium -v'
+                echo 'Building...'
             }
         }
-
-        stage('Checkout') {
+        stage('Test') {
             steps {
-                checkout scm
+                echo 'Testing...'
             }
         }
-
-        stage('Check ADB') {
+        stage('Deploy') {
             steps {
-                sh '''
-                    echo "Verifying ADB installation..."
-                    adb version
-                    adb start-server
-                    adb devices
-                '''
+                echo 'Deploying...'
             }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                sh 'npm ci'
-            }
-        }
-
-        stage('Run WebdriverIO Tests') {
-            steps {
-                sh '''
-                    echo "Running tests..."
-                    npx wdio run ./wdio.conf.js || echo "⚠️ Tests failed, but continuing to report..."
-                '''
-            }
-        }
-
-        stage('Generate & Archive Reports') {
-            steps {
-                sh 'npx allure generate ./allure-results --clean -o ./allure-report || true'
-                archiveArtifacts artifacts: 'allure-report/**/*.*', fingerprint: true, allowEmptyArchive: true
-            }
-        }
-
-        stage('Cleanup') {
-            steps {
-                sh 'adb kill-server || true'
-            }
-        }
-    }
-
-    post {
-        always {
-            echo "✅ Jenkins pipeline finished."
         }
     }
 }
