@@ -1,19 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>📱 MobileAppsDummy WDIO Runner</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>WDIO Test Runner</title>
+  <style>
+    body { font-family: monospace; background: #f6f8fa; padding: 20px; }
+    #output {
+      white-space: pre-wrap; background: #000; color: #0f0;
+      padding: 15px; border-radius: 8px; height: 400px; overflow-y: auto;
+    }
+    select, button {
+      padding: 8px 12px; margin: 8px 0;
+      border-radius: 5px; border: 1px solid #ccc;
+    }
+    button {
+      background: #007bff; color: #fff; border: none; cursor: pointer;
+    }
+    button:hover { background: #0056b3; }
+  </style>
 </head>
 <body>
-  <h1>📱 MobileAppsDummy Test Runner</h1>
+  <h2>🚀 WebdriverIO Test Runner</h2>
 
-  <button id="run-btn">Run WDIO Tests</button>
+  <label for="test-select">Select test file:</label>
+  <select id="test-select"></select>
+  <button id="run-btn">Run Selected Test</button>
+  <button id="run-all-btn">Run All Tests</button>
   <a id="view-allure" href="/allure-report/index.html" target="_blank" style="display:none;">View Allure Report</a>
 
-  <pre id="output"></pre>
+  <div id="output">Ready to run tests...</div>
 
-  <script src="app.js"></script>
+  <script>
+    // Load test list from backend
+    async function loadTests() {
+      const res = await fetch('/tests');
+      const data = await res.json();
+      const select = document.getElementById('test-select');
+      data.tests.forEach(file => {
+        const opt = document.createElement('option');
+        opt.value = file;
+        opt.textContent = file;
+        select.appendChild(opt);
+      });
+    }
+
+    // Run a single selected test
+    document.getElementById('run-btn').addEventListener('click', async () => {
+      const output = document.getElementById('output');
+      const spec = document.getElementById('test-select').value;
+      output.textContent = `🚀 Running: ${spec}\n`;
+      document.getElementById('view-allure').style.display = 'none';
+
+      const response = await fetch('/run-tests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spec })
+      });
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        output.textContent += decoder.decode(value);
+        output.scrollTop = output.scrollHeight;
+      }
+
+      output.textContent += '\n✅ Test completed!';
+      document.getElementById('view-allure').style.display = 'inline';
+    });
+
+    // 🟩 Run ALL tests
+    document.getElementById('run-all-btn').addEventListener('click', async () => {
+      const output = document.getElementById('output');
+      output.textContent = '🚀 Running all tests...\n';
+      document.getElementById('view-allure').style.display = 'none';
+
+      const response = await fetch('/run-tests', { method: 'POST' });
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        output.textContent += decoder.decode(value);
+        output.scrollTop = output.scrollHeight;
+      }
+
+      output.textContent += '\n✅ All tests completed!';
+      document.getElementById('view-allure').style.display = 'inline';
+    });
+
+    // Load list on page load
+    loadTests();
+  </script>
 </body>
 </html>
