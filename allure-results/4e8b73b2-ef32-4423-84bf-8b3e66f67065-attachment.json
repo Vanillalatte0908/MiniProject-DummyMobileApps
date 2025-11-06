@@ -1,0 +1,4 @@
+{
+  "using": "xpath",
+  "value": "//android.widget.TextView[@content-desc=\"store item text\" and @text=\"Sauce Labs Backpack\"]"
+}

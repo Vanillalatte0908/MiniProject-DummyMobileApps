@@ -61,12 +61,28 @@ app.post('/run-tests', (req, res) => {
   const child = spawn(command, args, { shell: true });
   res.setHeader('Content-Type', 'text/plain');
 
+  // Stream output live to frontend
   child.stdout.on('data', data => res.write(data));
   child.stderr.on('data', data => res.write(data));
+
+  // When WDIO finishes
   child.on('close', code => {
     res.write(`\n✅ WDIO finished with exit code ${code}`);
-    res.write(`\n✅ Allure report available at /allure-report/index.html`);
-    res.end();
+
+    // 🧩 Always generate Allure report (even if tests failed)
+    const generate = spawn(
+      'npx',
+      ['allure', 'generate', 'allure-results', '--clean', '-o', 'allure-report'],
+      { shell: true }
+    );
+
+    generate.stdout.on('data', data => res.write(data));
+    generate.stderr.on('data', data => res.write(data));
+
+    generate.on('close', () => {
+      res.write('\n✅ Allure report generated at /allure-report/index.html');
+      res.end();
+    });
   });
 });
 

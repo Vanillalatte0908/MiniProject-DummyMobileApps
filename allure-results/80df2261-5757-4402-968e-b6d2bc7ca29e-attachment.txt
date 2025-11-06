@@ -1,0 +1,1 @@
+invalid selector: WebDriverError: org.eclipse.wst.xml.xpath2.processor.XPathParserException: JFlex lexer error: Unknown character at line 1 col 91: " when running "element" with method "POST" and args "{"using":"xpath","value":"//android.widget.TextView[@content-desc=\"store item text\" and @text=\"Sauce Labs Backpack\"]\"]"}"
